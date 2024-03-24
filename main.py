@@ -1,28 +1,45 @@
-import firebase_admin
 from fastapi import FastAPI, HTTPException
-from decouple import config
-from firebase_admin import credentials, firestore
 from pydantic import BaseModel
-
+from firebase_admin import credentials, firestore, initialize_app
+from decouple import config
+import os
+import pyrebase
 
 
 cred = credentials.Certificate(config('CRED'))
-firebase_admin.initialize_app(cred)
+initialize_app(cred)
+
+config = {
+    "apiKey": "AIzaSyCnKFxvLy787xvvLRvgOu9Sq2Nemb8Jrac",
+    "authDomain": "crackup-c6205.firebaseapp.com",
+    "databaseURL": "gs://crackup-c6205.appspot.com",
+    "projectId": "crackup-c6205",
+    "storageBucket": "crackup-c6205.appspot.com",
+    "messagingSenderId": "183322287418",
+    "appId": "1:183322287418:web:fa6e63de33a02778434403",
+    "measurementId": "G-R0QWEL7K9Y",  
+}
+
+firebase = pyrebase.initialize_app(config)
+
+storage = firebase.storage()
 
 db = firestore.client()
-
-
+    
 app = FastAPI()
+
 
 class User(BaseModel):
     username: str
     password: str
-    
+
+
 class VideoUpload(BaseModel):
     title: str
-    videoUrl: str
-    isAds: bool
-
+    video_url: str
+    is_ads: bool
+    
+    
 @app.get("/videos")
 def videos():
     videos_ref = db.collection("videos")
@@ -66,15 +83,38 @@ async def signup(user: User):
 
 @app.post("/upload")
 async def upload(video_data: VideoUpload):
+    """
+    comment for temp in mocking
+    response = requests.get(video_data.video_url)
+    
+    if response.status_code == 200:
+        # Open the file in binary write mode and write the content of the response to it
+        with open(video_data.title, 'wb') as f:
+            f.write(response.content)
+        print(f"Video downloaded successfully")
+    else:
+        print("Failed to download video")
+    """
     try:
-        # Reference to the "videos" collection
+        # Create a directory with the specified name
+        file = open(f'{video_data.title}.txt', 'w')
+        file.close()
+        print(f"Empty file '{video_data.title}' created successfully.")
+    except FileExistsError:
+        print(f"Folder '{video_data.title}' already exists.")
+
+    storage.child(f"videos/{video_data.title}.txt").put(f'{video_data.title}.txt')
+
+    os.remove(f"{video_data.title}.txt")
+
+    try:
         videos_ref = db.collection("videos")
 
         # Add a new document to the collection with the provided video data
         doc_ref = videos_ref.add({
             "title": video_data.title,
-            "videoUrl": video_data.videoUrl,
-            "isAds": video_data.isAds
+            "videoUrl": video_data.video_url,
+            "isAds": video_data.is_ads
         })
 
         return {"message": "Document created successfully"}
@@ -170,4 +210,3 @@ async def delete_video_by_title(id: str):
     except Exception as e:
         # Handle any potential errors
         raise HTTPException(status_code=500, detail=str(e))
-    
