@@ -1,0 +1,5 @@
+# Ignore .env file
+.env
+
+# Ignore files containing 'firebase-adminsdk' in their names
+*firebase-adminsdk*
