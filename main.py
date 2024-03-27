@@ -17,7 +17,7 @@ config = {
     "storageBucket": "crackup-c6205.appspot.com",
     "messagingSenderId": "183322287418",
     "appId": "1:183322287418:web:fa6e63de33a02778434403",
-    "measurementId": "G-R0QWEL7K9Y",  
+    "measurementId": "G-R0QWEL7K9Y",
 }
 
 firebase = pyrebase.initialize_app(config)
@@ -25,7 +25,7 @@ firebase = pyrebase.initialize_app(config)
 storage = firebase.storage()
 
 db = firestore.client()
-    
+
 app = FastAPI()
 
 
@@ -44,6 +44,7 @@ class VideoUpload(BaseModel):
 def health_check():
     return {"message": "Good health check"}
 
+
 @app.get("/videos")
 def videos():
     videos_ref = db.collection("videos")
@@ -54,11 +55,12 @@ def videos():
         video_list.append(doc.to_dict())
     return video_list
 
+
 @app.get("/login")
 def login(user: User):
     username = user.username
     password = user.password
-    
+
     users_ref = db.collection("users")
     query = users_ref.where("username", "==", username).limit(1).stream()
     for doc in query:
@@ -68,6 +70,7 @@ def login(user: User):
             return {"message": "Login successful", "user": user_data}
 
     raise HTTPException(status_code=401, detail="Invalid username or password")
+
 
 @app.post("/signup")
 async def signup(user: User):
@@ -85,12 +88,13 @@ async def signup(user: User):
     except Exception as e:
         return {"error": str(e)}
 
+
 @app.post("/upload")
 async def upload(video_data: VideoUpload):
     """
     comment for temp in mocking
     response = requests.get(video_data.video_url)
-    
+
     if response.status_code == 200:
         # Open the file in binary write mode and write the content of the response to it
         with open(video_data.title, 'wb') as f:
@@ -107,7 +111,8 @@ async def upload(video_data: VideoUpload):
     except FileExistsError:
         print(f"Folder '{video_data.title}' already exists.")
 
-    storage.child(f"videos/{video_data.title}.txt").put(f'{video_data.title}.txt')
+    storage.child(
+        f"videos/{video_data.title}.txt").put(f'{video_data.title}.txt')
 
     os.remove(f"{video_data.title}.txt")
 
@@ -140,19 +145,20 @@ async def get_video(id: str):
     if not video_data:
         raise HTTPException(status_code=404, detail="Video not found")
 
-    return {"video": video_data[0]}  # Returning the first video found (assuming there should be only one)
+    # Returning the first video found (assuming there should be only one)
+    return {"video": video_data[0]}
 
 
 @app.get("/findNotDoneVideo")
 def find_not_done_video():
-    videos_ref = db.collection("videos")
-    
-    
     """
     return video base on status of uploading & processing of the same users
     ans: there is no attribute for checking status of the videos 
     """
+    videos_ref = db.collection("videos")
+
     pass
+
 
 @app.put("/video/chose/{id}")
 def edit_title(id: str, title: str):
@@ -165,14 +171,15 @@ def edit_title(id: str, title: str):
         for doc in query:
             # Update each document with the provided updated data
             doc.reference.update({
-            "title": title
-        })
-        
+                "title": title
+            })
+
         return {"message": "Document updated successfully"}
     except Exception as e:
         # Handle any potential errors
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
 @app.get("/categories/{emo}")
 async def get_videos_by_emo(emo: str):
     try:
@@ -180,7 +187,8 @@ async def get_videos_by_emo(emo: str):
         videos_ref = db.collection("videos")
 
         # Query the collection to find documents where "emo" array contains the specified value
-        query = videos_ref.where("emotion", "array_contains", emo).limit(10).stream()
+        query = videos_ref.where(
+            "emotion", "array_contains", emo).limit(10).stream()
 
         # Initialize a list to store the results
         video_list = []
@@ -195,13 +203,14 @@ async def get_videos_by_emo(emo: str):
     except Exception as e:
         # Handle any potential errors
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+
 @app.delete("/video/{id}")
 async def delete_video_by_title(id: str):
     try:
         # Reference to the "videos" collection
         videos_ref = db.collection("videos")
-        
+
         # Query the collection to find the document(s) with the specified title
         query = videos_ref.where("id", "==", id).stream()
 
