@@ -38,8 +38,12 @@ class VideoUpload(BaseModel):
     title: str
     video_url: str
     is_ads: bool
-    
-    
+
+
+@app.get("/")
+def health_check():
+    return {"message": "Good health check"}
+
 @app.get("/videos")
 def videos():
     videos_ref = db.collection("videos")
