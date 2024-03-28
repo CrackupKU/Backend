@@ -1,9 +1,11 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from firebase_admin import credentials, firestore, initialize_app
+from firebase_admin import auth, credentials, firestore, initialize_app
 from decouple import config
 import os
 import pyrebase
+
+from models.database_model import UserModel, VideoModel
+from models.request_body import LoginOrSignUp
 
 
 cred = credentials.Certificate(config('CRED'))
@@ -29,17 +31,6 @@ db = firestore.client()
 app = FastAPI()
 
 
-class User(BaseModel):
-    username: str
-    password: str
-
-
-class VideoUpload(BaseModel):
-    title: str
-    video_url: str
-    is_ads: bool
-
-
 @app.get("/")
 def health_check():
     return {"message": "Good health check"}
@@ -56,41 +47,51 @@ def videos():
     return video_list
 
 
-@app.get("/login")
-def login(user: User):
-    username = user.username
-    password = user.password
+@app.post("/login")
+async def login(request: LoginOrSignUp):
+    try:
+        user_credential = auth.get_user_by_email(
+            email=request.email,
+            # password=request.password
+        )
+        user_id = user_credential.uid
 
-    users_ref = db.collection("users")
-    query = users_ref.where("username", "==", username).limit(1).stream()
-    for doc in query:
-        user_data = doc.to_dict()
-        # Check if password matches (assuming password is stored securely)
-        if user_data.get("password") == password:
-            return {"message": "Login successful", "user": user_data}
+        users_ref = db.collection("users")
+        user_doc = users_ref.document(user_id).get()
+        user_data = user_doc.to_dict() if user_doc.exists else {}
 
-    raise HTTPException(status_code=401, detail="Invalid username or password")
+        return {"message": "Login successful", "user_id": user_id, "user_data": user_data}
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/signup")
-async def signup(user: User):
+async def signup(request: LoginOrSignUp):
     try:
-        # Reference to the "users" collection
+        user_credential = auth.create_user(
+            email=request.email,
+            password=request.password
+        )
+        user_id = user_credential.uid
+        user_model = UserModel(
+            id=user_id,
+            email=request.email,
+            username=request.email.split("@")[0],
+        )
+
         users_ref = db.collection("users")
+        doc_ref = users_ref.document(user_id)
+        doc_ref.set(user_model.model_dump())
 
-        # Add a new document to the collection with the provided user data
-        doc_ref = users_ref.add({
-            "username": user.username,
-            "password": user.password
-        })
+        return {"message": "Signup successful", "user_id": user_id}
 
-        return {"message": "Document created successfully"}
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/upload")
-async def upload(video_data: VideoUpload):
+async def upload(video_data: VideoModel):
     """
     comment for temp in mocking
     response = requests.get(video_data.video_url)
