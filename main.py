@@ -4,8 +4,8 @@ from decouple import config
 import os
 import pyrebase
 
-from models.database_model import UserModel, VideoModel
-from models.request_body import LoginOrSignUp
+from models.database_model import Status, UserModel, VideoModel
+from models.request_body import SignUpRequest, UploadRequest
 
 
 cred = credentials.Certificate(config('CRED'))
@@ -47,27 +47,27 @@ def videos():
     return video_list
 
 
-@app.post("/login")
-async def login(request: LoginOrSignUp):
-    try:
-        user_credential = auth.get_user_by_email(
-            email=request.email,
-            # password=request.password
-        )
-        user_id = user_credential.uid
+# @app.post("/login")
+# async def login(request: SignUpRequest):
+#     try:
+#         user_credential = auth.get_user_by_email(
+#             email=request.email,
+#             # password=request.password
+#         )
+#         user_id = user_credential.uid
 
-        users_ref = db.collection("users")
-        user_doc = users_ref.document(user_id).get()
-        user_data = user_doc.to_dict() if user_doc.exists else {}
+#         users_ref = db.collection("users")
+#         user_doc = users_ref.document(user_id).get()
+#         user_data = user_doc.to_dict() if user_doc.exists else {}
 
-        return {"message": "Login successful", "user_id": user_id, "user_data": user_data}
+#         return {"message": "Login successful", "user_id": user_id, "user_data": user_data}
 
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+#     except Exception as e:
+#         raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/signup")
-async def signup(request: LoginOrSignUp):
+async def signup(request: SignUpRequest):
     try:
         user_credential = auth.create_user(
             email=request.email,
@@ -91,7 +91,7 @@ async def signup(request: LoginOrSignUp):
 
 
 @app.post("/upload")
-async def upload(video_data: VideoModel):
+async def upload(request: UploadRequest):
     """
     comment for temp in mocking
     response = requests.get(video_data.video_url)
@@ -104,32 +104,28 @@ async def upload(video_data: VideoModel):
     else:
         print("Failed to download video")
     """
-    try:
-        # Create a directory with the specified name
-        file = open(f'{video_data.title}.txt', 'w')
-        file.close()
-        print(f"Empty file '{video_data.title}' created successfully.")
-    except FileExistsError:
-        print(f"Folder '{video_data.title}' already exists.")
-
-    storage.child(
-        f"videos/{video_data.title}.txt").put(f'{video_data.title}.txt')
-
-    os.remove(f"{video_data.title}.txt")
 
     try:
         videos_ref = db.collection("videos")
+        doc_ref = videos_ref.document()
 
-        # Add a new document to the collection with the provided video data
-        doc_ref = videos_ref.add({
-            "title": video_data.title,
-            "videoUrl": video_data.video_url,
-            "isAds": video_data.is_ads
-        })
+        video_model = VideoModel(
+            id=doc_ref.id,
+            title=request.title,
+            caption=request.caption,
+            videoUrl=request.videoUrl,
+            status=Status.PROCESS,
+            isAds=request.isAds,
+            uploadBy=request.uploadBy,
+            uploadDate=request.uploadDate,
+        )
 
-        return {"message": "Document created successfully"}
+        doc_ref.set(video_model.model_dump())
+
+        return {"message": "Document created successfully", "video_id": doc_ref.id}
+
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/video/{id}")

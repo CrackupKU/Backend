@@ -19,23 +19,24 @@ class Status(str, Enum):
 
 class VideoModel(BaseModel):
     id: str
-    uploadBy: str
     title: str
-    uploadDate: str
+    caption: str
     videoUrl: str
-    emotion: Emotion
+    emotion: Emotion = None
     status: Status
     isAds: bool
-    processingUrl: str
-    emotionLength: List[List[float]]
-    similarVideo: str
+    processingUrl: str = ''
+    emotionLength: List[List[float]] = []
+    similarVideo: str = ''
+    uploadBy: str
+    uploadDate: str
 
 
 class UserModel(BaseModel):
     id: str
-    username: str
-    uploadVideo: List[str] = []
     email: str
+    username: str
     profilePic: str = ''
+    uploadVideo: List[str] = []
     followingList: List[str] = []
     followerList: List[str] = []
