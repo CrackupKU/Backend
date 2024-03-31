@@ -128,7 +128,7 @@ async def upload(request: UploadRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.get("/video/{id}")
+@app.get("/videos/{id}")
 async def get_video(id: str):
     videos_ref = db.collection("videos")
     query = videos_ref.where("id", "==", id).limit(1).stream()
@@ -146,6 +146,21 @@ async def get_video(id: str):
     return {"video": video_data[0]}
 
 
+@app.get("/videos/user/{user_id}")
+async def get_user_videos(user_id: str):
+    try:
+        videos_ref = db.collection("videos")
+        videos_query = videos_ref.where("uploadBy", "==", user_id)
+        videos = videos_query.get()
+
+        video_list = [video.to_dict() for video in videos]
+
+        return {"video_list": video_list}
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @app.get("/findNotDoneVideo")
 def find_not_done_video():
     """
@@ -157,7 +172,7 @@ def find_not_done_video():
     pass
 
 
-@app.put("/video/chose/{id}")
+@app.put("/videos/chose/{id}")
 def edit_title(id: str, title: str):
     try:
         # Reference to the "videos" collection
@@ -202,7 +217,7 @@ async def get_videos_by_emo(emo: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.delete("/video/{id}")
+@app.delete("/videos/{id}")
 async def delete_video_by_title(id: str):
     try:
         # Reference to the "videos" collection
