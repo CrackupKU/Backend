@@ -111,6 +111,7 @@ async def upload(request: UploadRequest):
 
         video_model = VideoModel(
             id=doc_ref.id,
+            filename=request.filename,
             title=request.title,
             caption=request.caption,
             videoUrl=request.videoUrl,

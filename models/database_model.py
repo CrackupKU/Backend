@@ -19,6 +19,7 @@ class Status(str, Enum):
 
 class VideoModel(BaseModel):
     id: str
+    filename: str
     title: str
     caption: str
     videoUrl: str

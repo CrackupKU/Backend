@@ -8,6 +8,7 @@ class SignUpRequest(BaseModel):
 
 
 class UploadRequest(BaseModel):
+    filename: str
     title: str
     caption: str
     videoUrl: str
