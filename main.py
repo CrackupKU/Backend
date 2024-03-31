@@ -121,6 +121,10 @@ async def upload(request: UploadRequest):
         )
 
         doc_ref.set(video_model.model_dump())
+        user_doc_ref = db.collection("users").document(request.uploadBy)
+        user_doc_ref.update(
+            {"uploadVideo": firestore.ArrayUnion([doc_ref.id])}
+        )
 
         return {"message": "Document created successfully", "video_id": doc_ref.id}
 
