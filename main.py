@@ -36,34 +36,17 @@ def health_check():
     return {"message": "Good health check"}
 
 
-@app.get("/videos")
-def videos():
-    videos_ref = db.collection("videos")
-    docs = videos_ref.stream()
+@app.get("/users/{user_id}")
+async def get_user(user_id: str):
+    try:
+        users_ref = db.collection("users")
+        user_doc = users_ref.document(user_id).get()
+        user_data = user_doc.to_dict() if user_doc.exists else {}
 
-    video_list = []
-    for doc in docs:
-        video_list.append(doc.to_dict())
-    return video_list
+        return user_data
 
-
-# @app.post("/login")
-# async def login(request: SignUpRequest):
-#     try:
-#         user_credential = auth.get_user_by_email(
-#             email=request.email,
-#             # password=request.password
-#         )
-#         user_id = user_credential.uid
-
-#         users_ref = db.collection("users")
-#         user_doc = users_ref.document(user_id).get()
-#         user_data = user_doc.to_dict() if user_doc.exists else {}
-
-#         return {"message": "Login successful", "user_id": user_id, "user_data": user_data}
-
-#     except Exception as e:
-#         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/signup")
@@ -133,6 +116,17 @@ async def upload(request: UploadRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.get("/videos")
+def videos():
+    videos_ref = db.collection("videos")
+    docs = videos_ref.stream()
+
+    video_list = []
+    for doc in docs:
+        video_list.append(doc.to_dict())
+    return video_list
+
+
 @app.get("/videos/{id}")
 async def get_video(id: str):
     videos_ref = db.collection("videos")
@@ -160,7 +154,7 @@ async def get_user_videos(user_id: str):
 
         video_list = [video.to_dict() for video in videos]
 
-        return {"video_list": video_list}
+        return video_list
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
