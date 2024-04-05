@@ -152,9 +152,21 @@ async def get_user_videos(user_id: str):
         videos_query = videos_ref.where("uploadBy", "==", user_id)
         videos = videos_query.get()
 
-        video_list = [video.to_dict() for video in videos]
+        return [video.to_dict() for video in videos]
 
-        return video_list
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/videos/user/{user_id}/status/{status}")
+async def get_user_videos_by_status(user_id: str, status: Status):
+    try:
+        videos_ref = db.collection("videos")
+        videos_query = videos_ref.where(
+            "uploadBy", "==", user_id).where("status", "==", status)
+        videos = videos_query.get()
+
+        return [video.to_dict() for video in videos]
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
