@@ -1,3 +1,5 @@
+from datetime import datetime
+from typing import List
 from fastapi import FastAPI, HTTPException
 from firebase_admin import auth, credentials, firestore, initialize_app
 from decouple import config
@@ -162,8 +164,10 @@ async def get_user_videos(user_id: str):
 async def get_user_videos_by_status(user_id: str, status: Status):
     try:
         videos_ref = db.collection("videos")
-        videos_query = videos_ref.where(
-            "uploadBy", "==", user_id).where("status", "==", status)
+        videos_query = videos_ref \
+            .where("uploadBy", "==", user_id) \
+            .where("status", "==", status) \
+            .order_by("uploadDate", direction=firestore.Query.DESCENDING)
         videos = videos_query.get()
 
         return [video.to_dict() for video in videos]
