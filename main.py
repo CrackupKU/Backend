@@ -126,25 +126,21 @@ def videos():
     video_list = []
     for doc in docs:
         video_list.append(doc.to_dict())
-    return video_list
 
 
 @app.get("/videos/{id}")
 async def get_video(id: str):
-    videos_ref = db.collection("videos")
-    query = videos_ref.where("id", "==", id).limit(1).stream()
+    try:
+        video_doc = db.collection("videos").document(id).get()
+        video_data = video_doc.to_dict()
 
-    # Iterate over the query results to fetch the actual data
-    video_data = []
-    for doc in query:
-        video_data.append(doc.to_dict())
+        if not video_data:
+            raise HTTPException(status_code=404, detail="Video not found")
 
-    # Check if any data was found for the given ID
-    if not video_data:
-        raise HTTPException(status_code=404, detail="Video not found")
+        return video_data
 
-    # Returning the first video found (assuming there should be only one)
-    return {"video": video_data[0]}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/videos/user/{user_id}")
