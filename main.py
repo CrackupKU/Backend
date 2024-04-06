@@ -121,11 +121,9 @@ async def upload(request: UploadRequest):
 @app.get("/videos")
 def videos():
     videos_ref = db.collection("videos")
-    docs = videos_ref.stream()
+    videos = videos_ref.stream()
 
-    video_list = []
-    for doc in docs:
-        video_list.append(doc.to_dict())
+    return [video.to_dict() for video in videos]
 
 
 @app.get("/videos/{id}")
