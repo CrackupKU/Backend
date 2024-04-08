@@ -6,6 +6,7 @@ from decouple import config
 import requests
 import os
 import pyrebase
+import time
 
 from models.database_model import Status, UserModel, VideoModel
 from models.request_body import SignUpRequest, UploadRequest
@@ -118,6 +119,7 @@ async def upload(request: UploadRequest):
             'name': request.filename,
             'id': doc_ref.id
         }
+        time.sleep(1000)
         r = requests.post(url = API_ENDPOINT, params = data)
 
         return {"message": f"Document created successfully, upload service: {r.text}", "video_id": doc_ref.id}
