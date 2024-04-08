@@ -119,8 +119,7 @@ async def upload(request: UploadRequest):
             'name': request.filename,
             'id': doc_ref.id
         }
-        time.sleep(1)
-        r = requests.post(url = API_ENDPOINT, params = data)
+        r = requests.post(url = API_ENDPOINT, params = data, timeout=10)
 
         return {"message": f"Document created successfully, upload service: {r.text}", "video_id": doc_ref.id}
 
