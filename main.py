@@ -114,7 +114,7 @@ async def upload(request: UploadRequest):
             {"uploadVideo": firestore.ArrayUnion([doc_ref.id])}
         )
 
-        API_ENDPOINT = "https://crackup-nojob53awq-as.a.run.app"
+        API_ENDPOINT = "https://crackup-nojob53awq-as.a.run.app/upload"
         data = {
             'name': request.filename,
             'id': doc_ref.id
