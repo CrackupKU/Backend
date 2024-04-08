@@ -3,6 +3,7 @@ from typing import List
 from fastapi import FastAPI, HTTPException
 from firebase_admin import auth, credentials, firestore, initialize_app
 from decouple import config
+import requests
 import os
 import pyrebase
 
@@ -112,7 +113,14 @@ async def upload(request: UploadRequest):
             {"uploadVideo": firestore.ArrayUnion([doc_ref.id])}
         )
 
-        return {"message": "Document created successfully", "video_id": doc_ref.id}
+        API_ENDPOINT = "https://crackup-nojob53awq-as.a.run.app"
+        data = {
+            'name': request.filename,
+            'id': doc_ref.id
+        }
+        r = requests.post(url = API_ENDPOINT, data = data)
+
+        return {"message": f"Document created successfully, upload service: {r.text}", "video_id": doc_ref.id}
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
