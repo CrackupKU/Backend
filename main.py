@@ -154,45 +154,83 @@ async def get_videos_by_status(status: Status):
 async def recommend_videos(request: RecommendRequest = None):
     try:
         print(request)
-        # if len(request.watchedTime) == 0 and len(request.boundVideoIds) == 0:
         videos_ref = db.collection("videos")
-        videos_query = videos_ref.where("isAds", "==", False) \
-            .where("status", "==", Status.PUBLISH) \
-            .limit(100)
-        ads_query = videos_ref.where("isAds", "==", True) \
-            .where("status", "==", Status.PUBLISH) \
-            .limit(100)
 
-        videos = videos_query.get()
-        ads = ads_query.get()
-        random_videos = random.sample(videos, 5)
-        random_ads = random.sample(ads, 1)
+        if len(request.watchedTime) == 0 and len(request.boundVideoIds) == 0:
+            videos_query = videos_ref.where("isAds", "==", False) \
+                .where("status", "==", Status.PUBLISH) \
+                .limit(100)
+            ads_query = videos_ref.where("isAds", "==", True) \
+                .where("status", "==", Status.PUBLISH) \
+                .limit(100)
 
-        recommend_videos = [video.to_dict() for video in random_videos]
-        recommend_videos.append(random_ads[0].to_dict())
+            videos = videos_query.get()
+            ads = ads_query.get()
+            random_videos = random.sample(videos, 5)
+            random_ads = random.sample(ads, 1)
 
-        return recommend_videos
+            recommend_videos = [video.to_dict() for video in random_videos]
+            recommend_videos.append(random_ads[0].to_dict())
 
-        # else:
-        #     # Get the most watched 3 emotions by the user
-        #     most_watched_emotions = sorted(
-        #         request.watched_time.emotions, key=lambda x: x.watchedTime, reverse=True)[:3]
+            return recommend_videos
 
-        #     # Get the videos with the most watched emotions
-        #     videos_ref = db.collection("videos")
-        #     videos_query = videos_ref.where("emotion", "array_contains_any", [
-        #                                     emotion.emotion for emotion in most_watched_emotions]).limit(2)
-        #     videos = videos_query.get()
+        else:
+            random_video_amount = 3
+            print("-----------------get-video-based-on-user-watched-----------------")
+            most_watched_time = sorted(
+                request.watchedTime, key=lambda x: x.duration, reverse=True)
+            for i in most_watched_time:
+                print(i.emotion, i.duration)
 
-        #     # Get the advertisement video with the most watched emotion
-        #     ads_query = videos_ref.where("isAds", "==", True).where(
-        #         "emotion", "array_contains", most_watched_emotions[0].emotion).limit(1)
-        #     ads = ads_query.get()
+            videos_query = videos_ref.where("isAds", "==", False) \
+                .where("status", "==", Status.PUBLISH) \
+                .where("emotion", "==", most_watched_time[0].emotion) \
+                .where("id", "not-in", request.boundVideoIds) \
+                .limit(100)
+            videos = videos_query.get()
+            video_1 = random.sample(videos, 1) if len(
+                videos) >= 1 else videos  # 1st most watched emotion
 
-        #     recommend_videos = [video.to_dict() for video in videos]
-        #     recommend_videos.extend([ad.to_dict() for ad in ads])
+            videos_query = videos_ref.where("isAds", "==", False) \
+                .where("status", "==", Status.PUBLISH) \
+                .where("emotion", "==", most_watched_time[1].emotion) \
+                .where("id", "not-in", request.boundVideoIds) \
+                .limit(100)
+            videos = videos_query.get()
+            video_2 = random.sample(videos, 1) if len(
+                videos) >= 1 else videos  # 2nd most watched emotion
 
-        #     return recommend_videos
+            random_video_amount += 1 if len(video_1) == 0 else 0
+            random_video_amount += 1 if len(video_2) == 0 else 0
+
+            videos_query = videos_ref.where("isAds", "==", False) \
+                .where("status", "==", Status.PUBLISH) \
+                .where("id", "not-in", request.boundVideoIds) \
+                .limit(100)
+            videos = videos_query.get()
+            random_videos = random.sample(
+                videos, random_video_amount) if len(videos) >= random_video_amount else videos
+
+            # Get Ads
+            ads_query = videos_ref.where("isAds", "==", True) \
+                .where("status", "==", Status.PUBLISH) \
+                .where("emotion", "==", most_watched_time[0].emotion) \
+                .where("id", "not-in", request.boundVideoIds) \
+                .limit(100)
+            ads = ads_query.get()
+
+            if (len(ads) == 0):
+                ads_query = videos_ref.where("isAds", "==", True) \
+                    .where("status", "==", Status.PUBLISH) \
+                    .limit(100)
+                ads = ads_query.get()
+
+            random_ads = random.sample(ads, 1)
+
+            all_video = video_1 + video_2 + random_videos + random_ads
+            recommend_videos = [video.to_dict() for video in all_video]
+
+            return recommend_videos
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
