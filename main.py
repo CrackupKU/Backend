@@ -10,6 +10,7 @@ import time
 
 from models.database_model import Status, UserModel, VideoModel
 from models.request_body import RecommendRequest, SignUpRequest, UploadRequest
+import random
 
 
 cred = credentials.Certificate(config('CRED'))
@@ -157,16 +158,18 @@ async def recommend_videos(request: RecommendRequest = None):
         videos_ref = db.collection("videos")
         videos_query = videos_ref.where("isAds", "==", False) \
             .where("status", "==", Status.PUBLISH) \
-            .limit(5)
+            .limit(100)
         ads_query = videos_ref.where("isAds", "==", True) \
             .where("status", "==", Status.PUBLISH) \
-            .limit(1)
+            .limit(100)
 
         videos = videos_query.get()
         ads = ads_query.get()
+        random_videos = random.sample(videos, 5)
+        random_ads = random.sample(ads, 1)
 
-        recommend_videos = [video.to_dict() for video in videos]
-        recommend_videos.append(ads[0].to_dict())
+        recommend_videos = [video.to_dict() for video in random_videos]
+        recommend_videos.append(random_ads[0].to_dict())
 
         return recommend_videos
 
