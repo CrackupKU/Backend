@@ -9,7 +9,7 @@ import pyrebase
 import time
 
 from models.database_model import Status, UserModel, VideoModel
-from models.request_body import SignUpRequest, UploadRequest
+from models.request_body import RecommendRequest, SignUpRequest, UploadRequest
 
 
 cred = credentials.Certificate(config('CRED'))
@@ -119,7 +119,7 @@ async def upload(request: UploadRequest):
             'name': request.filename,
             'id': doc_ref.id
         }
-        r = requests.post(url = API_ENDPOINT, params = data, timeout=10)
+        r = requests.post(url=API_ENDPOINT, params=data, timeout=10)
 
         return {"message": f"Document created successfully, upload service: {r.text}", "video_id": doc_ref.id}
 
@@ -133,6 +133,66 @@ def videos():
     videos = videos_ref.stream()
 
     return [video.to_dict() for video in videos]
+
+
+@app.get("/videos/status/{status}")
+async def get_videos_by_status(status: Status):
+    try:
+        videos_ref = db.collection("videos")
+        videos_query = videos_ref.where("status", "==", status)
+        videos = videos_query.get()
+
+        return [video.to_dict() for video in videos]
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# Always return 5 videos with 1 advertisement video
+@app.post("/recommend")
+async def recommend_videos(request: RecommendRequest = None):
+    try:
+        print(request)
+        # if len(request.watchedTime) == 0 and len(request.boundVideoIds) == 0:
+        videos_ref = db.collection("videos")
+        videos_query = videos_ref.where("isAds", "==", False) \
+            .where("status", "==", Status.PUBLISH) \
+            .limit(5)
+        ads_query = videos_ref.where("isAds", "==", True) \
+            .where("status", "==", Status.PUBLISH) \
+            .limit(1)
+
+        videos = videos_query.get()
+        ads = ads_query.get()
+
+        recommend_videos = [video.to_dict() for video in videos]
+        recommend_videos.append(ads[0].to_dict())
+
+        return recommend_videos
+
+        # else:
+        #     # Get the most watched 3 emotions by the user
+        #     most_watched_emotions = sorted(
+        #         request.watched_time.emotions, key=lambda x: x.watchedTime, reverse=True)[:3]
+
+        #     # Get the videos with the most watched emotions
+        #     videos_ref = db.collection("videos")
+        #     videos_query = videos_ref.where("emotion", "array_contains_any", [
+        #                                     emotion.emotion for emotion in most_watched_emotions]).limit(2)
+        #     videos = videos_query.get()
+
+        #     # Get the advertisement video with the most watched emotion
+        #     ads_query = videos_ref.where("isAds", "==", True).where(
+        #         "emotion", "array_contains", most_watched_emotions[0].emotion).limit(1)
+        #     ads = ads_query.get()
+
+        #     recommend_videos = [video.to_dict() for video in videos]
+        #     recommend_videos.extend([ad.to_dict() for ad in ads])
+
+        #     return recommend_videos
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/videos/{id}")

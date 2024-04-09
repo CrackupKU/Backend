@@ -8,7 +8,7 @@ class Emotion(str, Enum):
     HAPPY = "HAPPY"
     ANGRY = "ANGRY"
     SAD = "SAD"
-    NEUTRAL = "NEUTRAL"
+    DISGUST = "DISGUST"
     SURPRISE = "SURPRISE"
 
 
